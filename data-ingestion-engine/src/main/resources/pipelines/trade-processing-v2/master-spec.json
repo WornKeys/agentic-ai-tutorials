@@ -1,0 +1,50 @@
+{
+  "metadata": {
+    "pipeline_id": "trade-processing-v2",
+    "version": "1.1.0"
+  },
+  "ingestion": {
+    "topic": "inbound.trades",
+    "format": "xml"
+  },
+  "egress": {
+    "topic": "outbound.trades.processed",
+    "format": "json"
+  },
+  "dependencies": {
+    "validation_api": {
+      "url_property": "{{integration.api.validation-url}}",
+      "method": "GET",
+      "timeout_ms": 2000
+    },
+    "final_api": {
+      "url_property": "{{integration.api.final-url}}",
+      "method": "POST",
+      "timeout_ms": 5000
+    }
+  },
+  "routing_rules": {
+    "pre_validation_filters": [
+      {
+        "description": "Reject negative amounts",
+        "condition_type": "simple",
+        "expression": "${body.amount} < 0",
+        "action": "dlq"
+      }
+    ],
+    "post_validation_filters": [
+      {
+        "description": "Reject inactive accounts based on API 1 response",
+        "condition_type": "jsonpath",
+        "expression": "$.[?(@.accountStatus != 'ACTIVE')]",
+        "action": "dlq"
+      }
+    ]
+  },
+  "data_contracts": {
+    "unified_input_schema": { "type": "object", "properties": { "amount": {"type": "number"}, "accountId": {"type": "string"} } },
+    "validation_api_response_schema": { "type": "object", "properties": { "accountStatus": {"type": "string"} } },
+    "final_api_request_schema": { "type": "object", "properties": { "transactionValue": {"type": "number"}, "id": {"type": "string"} } },
+    "unified_output_schema": { "type": "object", "properties": { "status": {"type": "string"}, "receiptId": {"type": "string"} } }
+  }
+}
