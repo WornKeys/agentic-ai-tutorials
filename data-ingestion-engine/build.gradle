@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.4'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.wornkeys'
+version = '1.0.0'
+
+java {
+    sourceCompatibility = '17'
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('camelVersion', '4.5.0')
+}
+
+dependencies {
+    // Spring Boot Core
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Apache Camel Core & Spring Boot Starter
+    implementation "org.apache.camel.springboot:camel-spring-boot-starter:${camelVersion}"
+
+    // Camel Components for Integration Saga
+    implementation "org.apache.camel.springboot:camel-kafka-starter:${camelVersion}"
+    implementation "org.apache.camel.springboot:camel-http-starter:${camelVersion}"
+    implementation "org.apache.camel.springboot:camel-jackson-starter:${camelVersion}"
+    implementation "org.apache.camel.springboot:camel-jslt-starter:${camelVersion}"
+    implementation "org.apache.camel.springboot:camel-jsonpath-starter:${camelVersion}"
+    
+    // Testing (Ensures QA Agent can run Testcontainers)
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:kafka'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

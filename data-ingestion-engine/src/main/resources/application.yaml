@@ -1,0 +1,15 @@
+camel:
+  springboot:
+    # Scan all pipeline subdirectories for generated yaml routes
+    routes-include-pattern: classpath:pipelines/**/*.yaml
+
+server:
+  port: 8080
+
+# Environment variables injected at runtime by Kubernetes/EC2
+integration:
+  kafka:
+    brokers: ${KAFKA_BROKERS:localhost:9092}
+  api:
+    validation-url: ${VALIDATION_API_URL:http://localhost:8081/validate}
+    final-url: ${FINAL_API_URL:http://localhost:8082/process}
