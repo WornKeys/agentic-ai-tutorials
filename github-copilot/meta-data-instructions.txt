@@ -1,0 +1,37 @@
+@workspace I need to build a LangGraph orchestration script in the active `orchestrator.py` file. I am orchestrating a multi-agent workflow that generates Apache Camel and JSLT pipelines.
+
+Write production-ready Python code using `langgraph` (`StateGraph`, `START`, `END`) and `langchain_openai` (`ChatOpenAI`).
+
+### 1. State Definition
+Define a `TypedDict` named `IntegrationGraphState` with:
+- `pipeline_id` (str)
+- `raw_context` (dict)
+- `master_spec` (str)
+- `request_jslt` (str)
+- `response_jslt` (str)
+- `camel_yaml` (str)
+- `sre_status` (str)
+- `sre_feedback` (str)
+- `retry_count` (int)
+
+### 2. Node Functions
+Create these nodes using standard LangChain ChatPromptTemplates:
+- `extract_context`: Mock function returning dummy DB data for `raw_context` and `pipeline_id`. Sets `retry_count = 0`.
+- `synthesize_spec`: Calls LLM to generate `master_spec` JSON based on `raw_context`.
+- `compile_jslt`: Calls LLM using `master_spec`. If `sre_feedback` exists in state, append it so the LLM corrects its mistakes. Use `re.search(r'<request_jslt>(.*?)</request_jslt>', response, re.DOTALL)` to extract the code. Do the same for `<response_jslt>`.
+- `compile_yaml`: Calls LLM using `master_spec` (and `sre_feedback` if present). Extract code from `<camel_yaml>...</camel_yaml>`.
+- `sre_review`: Acts as QA. Evaluates `master_spec`, `request_jslt`, `response_jslt`, and `camel_yaml`. Extract `<status>...</status>` (PASS/FAIL) and `<feedback>...</feedback>`. Increment `retry_count` by 1.
+- `commit_artifacts`: Mock file writer that prints the final strings to the console.
+
+### 3. Graph Routing
+Define `StateGraph(IntegrationGraphState)`:
+1. START -> `extract_context` -> `synthesize_spec`
+2. `synthesize_spec` routes to BOTH `compile_jslt` and `compile_yaml` (parallel).
+3. BOTH `compile_jslt` and `compile_yaml` route to `sre_review`.
+4. `sre_review` uses a conditional edge:
+   - If `sre_status` == "PASS": route to `commit_artifacts`.
+   - If `sre_status` == "FAIL" and `retry_count` < 3: route back to `compile_jslt` and `compile_yaml`.
+   - If `sre_status` == "FAIL" and `retry_count` >= 3: route to END.
+5. `commit_artifacts` -> END.
+
+Provide the complete `orchestrator.py` code, including the `builder.compile()` and a `__main__` block to test the execution.
