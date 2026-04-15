@@ -1,0 +1,44 @@
+- route:
+    id: "ai-generated-workflow-001"
+    from:
+      uri: "kafka:inbound.topic?groupId=ai-engine-group"
+    steps:
+      # Step 1: Unmarshal Kafka JSON byte array to Java Map
+      - unmarshal:
+          json:
+            library: Jackson
+
+      # Step 2: Evaluate AI-generated Rules (Mocking the rule bean call here)
+      - setHeader:
+          name: "RulesSpecPath"
+          constant: "/ai-config/rules/overlay-rules.json"
+      - bean:
+          ref: "jsonLogicBean"
+          method: "evaluate"
+
+      # Step 3: Stop if rules failed
+      - filter:
+          simple: "${header.RulesPassed} == 'true'"
+          steps:
+            # Step 4: Transform to Mutable API Request using AI JOLT spec
+            - setHeader:
+                name: "JoltSpecPath"
+                constant: "/ai-config/transformations/req-mapping.json"
+            - bean:
+                ref: "joltTransformer"
+                method: "transform"
+
+            # Step 5: Call the mutable API (with Idempotency key generated from event)
+            - setHeader:
+                name: "Idempotency-Key"
+                jsonpath: "$.eventId"
+            - setHeader:
+                name: Exchange.HTTP_METHOD
+                constant: POST
+            - to: "http://internal-api.enterprise.com/v1/mutate"
+
+            # Step 6: Route API response to next Kafka topic
+            - marshal:
+                json:
+                  library: Jackson
+            - to: "kafka:outbound.topic"

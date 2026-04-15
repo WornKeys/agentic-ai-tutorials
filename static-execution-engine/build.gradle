@@ -1,0 +1,62 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.enterprise.engine'
+version = '0.0.1-SNAPSHOT'
+description = 'static-execution-engine'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(22)
+    }
+}
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('camelVersion', "4.4.1")
+}
+
+dependencies {
+    // Spring Boot Core
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Apache Camel Core & YAML DSL
+    implementation "org.apache.camel.springboot:camel-spring-boot-starter:${camelVersion}"
+    implementation "org.apache.camel:camel-yaml-dsl:${camelVersion}"
+
+    // Camel Components
+    implementation "org.apache.camel:camel-kafka:${camelVersion}"
+    implementation "org.apache.camel:camel-http:${camelVersion}"
+    implementation "org.apache.camel:camel-jackson:${camelVersion}"
+
+    // JSON Transformation (JOLT Community Edition - Active Fork)
+    implementation 'io.github.jolt-community.jolt:jolt-community-core:1.2.0'
+    implementation 'io.github.jolt-community.jolt:json-community-utils:1.2.0'
+
+    // Sandboxed Rules Engine
+    implementation 'io.github.jamsesso:json-logic-java:1.0.7'
+
+    // Local Caching
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation "org.apache.camel:camel-test-spring-junit5:${camelVersion}"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.apache.camel.springboot:camel-spring-boot-dependencies:${camelVersion}"
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: ai-declarative-engine
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+
+camel:
+  springboot:
+    # This tells Camel where to look for the AI's generated routes
+    routes-include-pattern: classpath:ai-config/routes/*.yaml
+    # Prevent the app from failing to start if the AI hasn't generated a route yet
+    route-controller-route-startup-logging-level: INFO
