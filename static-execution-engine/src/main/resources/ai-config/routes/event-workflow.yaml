@@ -1,0 +1,58 @@
+- route:
+    id: "high-value-transaction-workflow"
+    from:
+      uri: "file:data/inbox?noop=true"
+      #uri: "kafka:inbound.transactions?groupId=declarative-engine"
+    steps:
+      # 1. Unmarshal raw bytes to Java Map
+      - unmarshal:
+          json:
+            library: Jackson
+
+      # 2. Extract key and fetch Overlay Data (Cache/API)
+      - setHeader:
+          name: "OverlayLookupKey"
+          jsonpath: "$.userId"
+      - bean:
+          ref: "overlayEnricher"
+          method: "enrichFromCache"
+
+      # 3. Evaluate JsonLogic Rules
+      - setHeader:
+          name: "RulesSpecPath"
+          constant: "/ai-config/rules/overlay-rules.json"
+      - bean:
+          ref: "jsonLogicBean"
+          method: "evaluate"
+
+      # 4. Gateway: Stop if rules fail
+      - filter:
+          simple: "${header.RulesPassed} == 'true'"
+          steps:
+            # 5. Transform payload via JOLT
+            - setHeader:
+                name: "JoltSpecPath"
+                constant: "/ai-config/transformations/req-mapping.json"
+            - bean:
+                ref: "joltTransformer"
+                method: "transform"
+
+            # 6. Execute Mutable HTTP Call
+            - setHeader:
+                name: "Idempotency-Key"
+                jsonpath: "$.requestHeader.idempotencyKey"
+            - setHeader:
+                name: Exchange.HTTP_METHOD
+                constant: POST
+            - setHeader:
+                name: Exchange.CONTENT_TYPE
+                constant: application/json
+            - marshal:
+                json:
+                  library: Jackson
+            # (Replace with a mockbin.org or webhook.site URL to see the live output)
+            - to: "http://internal-api.enterprise.com/v1/transactions/execute"
+
+            # 7. Route Response to final Kafka topic
+            #- to: "kafka:outbound.transactions"
+            - to: "log:output?showBody=true"

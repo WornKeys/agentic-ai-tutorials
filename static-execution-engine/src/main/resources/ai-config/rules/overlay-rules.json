@@ -1,0 +1,16 @@
+{
+  "and": [
+    {
+      ">": [
+        { "var": "event.transactionAmount" },
+        5000
+      ]
+    },
+    {
+      "==": [
+        { "var": "overlay.status" },
+        "ACTIVE"
+      ]
+    }
+  ]
+}

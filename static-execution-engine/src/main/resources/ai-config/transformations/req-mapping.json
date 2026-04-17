@@ -1,0 +1,20 @@
+[
+  {
+    "operation": "shift",
+    "spec": {
+      "eventId": "requestHeader.idempotencyKey",
+      "userId": "customer.identifier",
+      "transactionAmount": "payload.financials.amount",
+      "currency": "payload.financials.currency",
+      "merchantId": "payload.merchant"
+    }
+  },
+  {
+    "operation": "default",
+    "spec": {
+      "requestHeader": {
+        "sourceSystem": "AI_Declarative_Engine_v1"
+      }
+    }
+  }
+]
